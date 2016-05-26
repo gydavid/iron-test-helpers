@@ -269,7 +269,8 @@
     }
 
     down(target);
-    Polymer.Base.async(function() {
+
+    setTimeout(function() {
       up(target);
       click(target);
       callback && callback();
@@ -308,7 +309,7 @@
    * @param {!HTMLElement} target The node to fire the event on.
    */
   function focus(target) {
-    Polymer.Base.fire('focus', {}, {
+    fire('focus', {}, {
       bubbles: false,
       node: target
     });
@@ -320,7 +321,7 @@
    * @param {!HTMLElement} target The node to fire the event on.
    */
   function blur(target) {
-    Polymer.Base.fire('blur', {}, {
+    fire('blur', {}, {
       bubbles: false,
       node: target
     });
@@ -411,7 +412,7 @@
    */
   function pressAndReleaseKeyOn(target, keyCode, modifiers, key) {
     keyDownOn(target, keyCode, modifiers, key);
-    Polymer.Base.async(function() {
+    setTimeout(function() {
       keyUpOn(target, keyCode, modifiers, key);
     }, 1);
   }
@@ -435,6 +436,37 @@
   function pressSpace(target) {
     pressAndReleaseKeyOn(target, 32);
   }
+
+  function fire(type, detail, options) {
+    var node = options.node || this;
+    detail = (detail === null || detail === undefined) ? {} : detail;
+    var bubbles = options.bubbles === undefined ? true : options.bubbles;
+    var cancelable = Boolean(options.cancelable);
+    var useCache = options._useCache;
+    var event = this.getEvent(type, bubbles, cancelable, useCache);
+    event.detail = detail;
+    if (useCache) {
+      this._eventCache[type] = null;
+    }
+    node.dispatchEvent(event);
+    if (useCache) {
+      this._eventCache[type] = event;
+    }
+    return event;
+  };
+
+  this._eventCache = {};
+  function getEvent(type, bubbles, cancelable, useCache) {
+    var event = useCache && this._eventCache[type];
+    if (!event || ((event.bubbles != bubbles) ||
+      (event.cancelable != cancelable))) {
+      event = new Event(type, {
+        bubbles: Boolean(bubbles),
+        cancelable: cancelable
+      });
+    }
+    return event;
+  };
 
   global.MockInteractions = {
     focus: focus,
